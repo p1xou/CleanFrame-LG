@@ -1,38 +1,38 @@
 # CleanFrame LG
 
-Portage de CleanFrame pour les téléviseurs LG webOS, réalisé par **Naim**.
+A CleanFrame adaptation for LG webOS TVs, developed by **Naim**.
 
-Ce projet reprend le code et le design de **[CleanFrame](https://github.com/nthnclrk/CleanFrame)**, créé par **[Nathan Clark (@nthnclrk)](https://github.com/nthnclrk)** pour Samsung The Frame. L'idée originale, les dispositions Dock/List et l'essentiel du moteur visuel viennent de son travail. Naim a adapté l'intégration à LG webOS et ajouté un lecteur vidéo d'ambiance. Merci à Nathan d'avoir partagé son projet sous licence MIT et encouragé les adaptations.
+This project builds on the code and design of **[CleanFrame](https://github.com/nthnclrk/CleanFrame)**, created by **[Nathan Clark (@nthnclrk)](https://github.com/nthnclrk)** for Samsung The Frame. The original concept, Dock/List layouts and most of the visual engine are his work. Naim adapted the platform integration for LG webOS and added an ambient video player. Thank you to Nathan for sharing CleanFrame under MIT and encouraging adaptations.
 
-Cette adaptation est indépendante ; elle n'est ni approuvée ni maintenue par Nathan Clark, LG, Samsung ou les services de streaming.
+This is an independent adaptation, not endorsed or maintained by Nathan Clark, LG, Samsung or the streaming services.
 
-## Fonctions LG
+## LG features
 
-- Interface photographique, dispositions Dock/List, focus télécommande et préférences locales conservés.
-- Lancement d'applications déjà installées par l'API publique LG ; leurs comptes restent dans leurs applications respectives.
-- Catalogue des applications configurées, vérifié par `getAppLoadStatus`.
-- Lecteur vidéo d'ambiance interne : boucle, lecture silencieuse, OK pour pause/reprise, Retour pour fermer.
-- Installation additive via Developer Mode et le CLI officiel LG, sans root.
+- Original photographic interface, Dock/List layouts, remote focus navigation and local preferences.
+- Launching existing apps through LG's public API; accounts remain inside their respective apps.
+- A configured application catalog checked with `getAppLoadStatus`.
+- An internal ambient video player: looping, muted playback, OK to pause/resume and Back to close.
+- Additive installation through Developer Mode and the official LG CLI, without root.
 
-L'interface et les cinq cibles Netflix, YouTube, Prime Video, Stremio et Apple TV ont été testées sur une LG OLED B4 sous webOS 25. Ce constat ne garantit pas la compatibilité avec tous les modèles, régions ou firmwares. Les IDs de `webos/apps.json` sont des identifiants publics d'applications, pas des mots de passe ou des comptes.
+The interface and Netflix, YouTube, Prime Video, Stremio and Apple TV launch targets have been tested on an LG OLED B4 running webOS 25. This does not establish compatibility with every model, region or firmware. The IDs in `webos/apps.json` are public application identifiers, not account credentials.
 
-## Limites
+## Limitations
 
-Home reste le bouton de l'accueil LG. Retour appartient à l'application active ; CleanFrame ne peut pas intercepter globalement les touches dans Netflix ou Stremio. Aucun démarrage automatique ou remplacement de l'accueil système n'est fourni. Un raccourci numérique Accès rapide LG peut rouvrir CleanFrame si le modèle l'accepte.
+Home remains the LG system Home button. Back belongs to the active application; CleanFrame cannot intercept it globally inside other apps. Automatic startup and system launcher replacement are not provided. An LG Quick Access number shortcut can reopen CleanFrame where supported.
 
-Developer Mode a une durée limitée : prolonger sa session avec EXTEND avant expiration. Sa désactivation peut supprimer les applications de développement. Ne pas utiliser Clear Cache Data, qui affecte les caches des autres applications.
+Developer Mode sessions are time-limited: use EXTEND before expiration. Disabling Developer Mode can remove development apps. Avoid Clear Cache Data, which also affects other apps' caches.
 
-Le lecteur d'ambiance n'est pas le Samsung Art Mode ni un mode matériel LG basse consommation. Il n'altère pas les protections OLED du système. La 4K dépend du média et du décodeur ; la jonction de boucle peut présenter une transition.
+The ambient player is not Samsung Art Mode or an LG hardware low-power mode. It does not change system OLED protections. 4K playback depends on the media and decoder; the loop boundary may have a visible transition.
 
-## Compiler dans le cloud
+## Cloud builds
 
-Dans Actions, lancer manuellement **Build LG preview**. Le workflow vérifie les sources, utilise les polices publiques et empaquette l'application avec le CLI officiel LG. L'artefact contient un IPK et son empreinte SHA-256. Aucun secret TV ni accès réseau domestique n'est nécessaire au build.
+In Actions, manually run **Build LG preview**. The workflow checks the source, uses public fonts and packages the app with the official LG CLI. Its artifact contains an IPK and SHA-256 checksum. No TV credentials or home-network access are needed to build.
 
-Ce dépôt ne contient ni clé SSH, ni adresse de TV, ni passphrase, ni journal de connexion, ni vidéo personnelle. Le workflow ne contient pas la vidéo de l'installation de démonstration. Sans média fourni, le bouton d'ambiance indique qu'aucun fichier n'est inclus.
+No SSH keys, TV network address, passphrase, connection logs or private video are included in this repository. Without a supplied media file, the ambient button reports that no video is included. The private demonstration video is not part of the cloud build.
 
-## Préparation locale
+## Local preparation
 
-Prérequis : Node.js 22+, Python 3.10+, CLI officiel `@webos-tools/cli` et bibliothèque officielle LG webOSTV.js 1.2.13. Consulter [les outils LG](https://webostv.developer.lge.com/develop/tools/cli-installation) et [webOSTV.js](https://webostv.developer.lge.com/develop/references/webostvjs-introduction).
+Prerequisites: Node.js 22+, Python 3.10+, the official `@webos-tools/cli` and LG webOSTV.js 1.2.13. See [LG CLI installation](https://webostv.developer.lge.com/develop/tools/cli-installation) and [webOSTV.js](https://webostv.developer.lge.com/develop/references/webostvjs-introduction).
 
 ```text
 npm ci
@@ -41,19 +41,25 @@ npm run check:lg
 npm run check:public
 ```
 
-Définir `CLEANFRAME_WEBOSTV_JS` vers le fichier officiel webOSTV.js, avec sa licence adjacente. Facultativement, définir `CLEANFRAME_ART_VIDEO` vers une vidéo MP4 ou WebM que vous êtes autorisé à utiliser. Garder ce média dans `.local/`. Puis :
+Set `CLEANFRAME_WEBOSTV_JS` to the official webOSTV.js file with its adjacent license. Optionally set `CLEANFRAME_ART_VIDEO` to an MP4 or WebM file you are authorized to use. Keep private media in `.local/`. Then run:
 
 ```text
 npm run prepare:lg
 ares-package dist/webos-app -o dist
 ```
 
-Les sources `app/` conservent le moteur et l'adaptateur Tizen d'origine pour comparaison. La préparation LG remplace l'adaptateur, les IDs et les métadonnées dans `dist/webos-app`. Ne pas installer le manifeste Tizen sur une LG. Les documents historiques sous `docs/` décrivent le projet Samsung d'origine ; ce README décrit l'adaptation LG.
+The `app/` source retains the original visual engine and Tizen adapter for comparison. LG preparation replaces the adapter, IDs and metadata in `dist/webos-app`. Do not install the Tizen manifest on an LG TV. Historical documents under `docs/` describe the original Samsung project; this README describes the LG adaptation.
 
-Pour l'installation, suivre [Developer Mode LG](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app) depuis un ordinateur autorisé sur le même réseau. La configuration d'appareil et sa clé restent sur cet ordinateur. Ne jamais les ajouter au dépôt ou aux journaux Actions.
+Follow [LG Developer Mode instructions](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app) from an authorized computer on the same network. Device configuration and keys stay on that computer. Never add them to the repository or Actions logs.
 
-## Licence et crédits
+## Development and updates
 
-Le code original est sous [licence MIT](LICENSE), copyright Nathan Clark, conservé. Les ajouts LG de Naim sont également fournis sous MIT. Les polices, photographies et marques gardent leurs conditions dans [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). La licence du code ne donne pas de droit de redistribution sur une vidéo YouTube : aucun fichier vidéo téléchargé n'est inclus.
+The private TV project and this GitHub checkout are separate copies. The TV project retains its local media, tools, device configuration and installation records. Preparing GitHub updates does not remove or replace them.
 
-Voir [CREDITS.md](CREDITS.md) et [PRIVACY-REVIEW.md](PRIVACY-REVIEW.md).
+Develop and test requested TV changes in the private project, then synchronize reviewed portable source changes and English documentation here. Keep the repository private. A push does not install an update on the TV. See [WORKFLOW.md](WORKFLOW.md).
+
+## License and credits
+
+The original code is covered by [MIT](LICENSE), with Nathan Clark's copyright retained. Naim's LG additions are also under MIT. Fonts, photographs and trademarks retain the terms in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The code license does not grant redistribution rights for YouTube videos; no downloaded video is included.
+
+See [CREDITS.md](CREDITS.md) and [PRIVACY-REVIEW.md](PRIVACY-REVIEW.md).

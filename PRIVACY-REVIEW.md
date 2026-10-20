@@ -1,9 +1,11 @@
-# Revue avant partage
+# Pre-sharing privacy review
 
-Cette copie indépendante a été préparée sans importer les fichiers Git de la machine de développement ni l'historique de sa configuration TV.
+This independent copy was prepared without importing the development machine's Git metadata or its TV configuration history.
 
-Exclus : clés SSH, passphrases, adresses du réseau domestique, profils d'appareils, outils installés, fichiers temporaires, journaux, paquets IPK/WGT et vidéo de démonstration. Les commandes d'installation et chemins personnels du journal local ne sont pas copiés.
+Excluded: SSH keys, passphrases, home-network addresses, device profiles, installed tools, temporary files, logs, IPK/WGT packages and the demonstration video. Personal installation commands and profile paths from the local setup record were not copied.
 
-Le prénom Naim est inclus volontairement pour créditer l'adaptation, conformément à la demande de l'auteur du portage. Le compte GitHub et les métadonnées publiques des commits restent visibles aux personnes autorisées à voir le dépôt. Les IDs d'applications commerciales et liens de sources publiques ne sont pas des identifiants de comptes personnels.
+Naim's first name is intentionally included for attribution, as requested. The GitHub account and commit metadata remain visible to authorized repository users. Commercial application IDs and public source links are not personal account credentials. Commits use a GitHub noreply address instead of a personal contact email.
 
-Les contrôles automatiques recherchent les secrets usuels, données de connexion connues, chemins de profils personnels et fichiers exclus. Leur résultat décrit un périmètre examiné ; il ne constitue pas une garantie absolue d'absence de toute information sensible. Toute future modification, publication d'artefact ou modification de visibilité demande une nouvelle revue.
+Automated checks search for common secrets, known connection data, personal profile paths and excluded files. Their results describe the material reviewed; they are not an absolute guarantee that no sensitive information exists. Future changes, artifact uploads and visibility changes require a new review.
+
+The private TV project remains separate and retains its local media and setup. GitHub documentation is maintained in English. See [WORKFLOW.md](WORKFLOW.md).
