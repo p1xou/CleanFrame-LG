@@ -1,0 +1,11 @@
+{
+  "id": "io.cleanframe.lg.preview",
+  "version": "0.1.3",
+  "vendor": "Personal CleanFrame port",
+  "type": "web",
+  "main": "index.html",
+  "title": "CleanFrame LG Preview",
+  "icon": "icon.png",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true
+}

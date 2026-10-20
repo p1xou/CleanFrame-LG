@@ -1,0 +1,20 @@
+{
+  "name": "cleanframe",
+  "version": "0.6.1",
+  "private": true,
+  "description": "LG webOS adaptation of CleanFrame by Nathan Clark, adapted by Naim.",
+  "scripts": {
+    "dev": "python3 scripts/preview.py",
+    "check": "node --check app/main.js && node --check app/device.js && python3 scripts/check.py",
+    "check:browser": "node scripts/check-browser.mjs",
+    "dev:public": "python3 scripts/preview.py --public-fonts",
+    "export:public": "python3 scripts/export-public.py",
+    "check:public": "python3 scripts/check-public.py",
+    "prepare:lg": "node scripts/webos/prepare.mjs",
+    "check:lg": "node scripts/webos/check-adapter.mjs && node scripts/webos/check-art.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  },
+  "license": "MIT"
+}

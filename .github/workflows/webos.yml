@@ -1,0 +1,47 @@
+name: Build LG preview
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      CLEANFRAME_PUBLIC_FONTS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run check
+      - run: node scripts/webos/check-adapter.mjs
+      - run: node scripts/webos/check-art.mjs
+      - run: npm run check:public
+      - run: npm run export:public
+      - run: |
+          curl --fail --location https://webostv.developer.lge.com/assets/library/webOSTVjs-1.2.13.zip -o /tmp/lg.zip
+          unzip -q /tmp/lg.zip -d /tmp/lg
+          SDK_JS=$(find /tmp/lg -name webOSTV.js -print -quit)
+          test -n "$SDK_JS"
+          CLEANFRAME_WEBOSTV_JS="$SDK_JS" node scripts/webos/prepare.mjs
+      - run: |
+          npm install --prefix /tmp/lg-cli @webos-tools/cli
+          /tmp/lg-cli/node_modules/.bin/ares --version
+          /tmp/lg-cli/node_modules/.bin/ares-package dist/webos-app -o dist
+          sha256sum dist/*.ipk > dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CleanFrame-LG-preview
+          path: |
+            dist/*.ipk
+            dist/SHA256SUMS.txt
+            dist/webos-preparation.json
+            LICENSE
+            THIRD_PARTY_NOTICES.md
+          if-no-files-found: error
