@@ -1,35 +1,52 @@
-# Validation
+# Testing CleanFrame-LG
 
-## Offline app changes
+Source checks, browser tests, package builds and real-device testing provide different levels of evidence. Do not claim an LG TV feature works merely because JavaScript or a cloud build passed.
+
+## Source and adapter checks
 
 ```sh
 npm ci
 npm run check
+npm run check:lg
+npm run check:public
+```
+
+These commands inspect code, resources, LG adapter behavior and public-source safety. They do not connect to a television and do not guarantee the absence of all vulnerabilities or secrets.
+
+## Optional browser testing
+
+```sh
 npx playwright install chromium
 npm run check:browser
 ```
 
-`check` validates JavaScript syntax, package identity/version and bundled resources. It does not contact a TV. `check:browser` uses a fresh Playwright Chromium profile and its own loopback preview. It checks List and Dock navigation, single focus, Home controls, grouped Settings, explicit OK application, applied checkmarks, pending-load cancellation, retries, persistence, all fifteen wallpaper bundles, available fonts, 720p scaling, migrations, the Home editor and honest browser-only launch errors. Reports and screenshots are in ignored `.local/qa/`. A failed assertion exits with a nonzero status.
+These tests run against the shared CleanFrame browser preview rather than the packaged LG runtime. They help check List/Dock layout, focus, navigation, wallpaper, settings and preferences. Use `CLEANFRAME_PUBLIC_FONTS=1 npm run check:browser` to test bundled public fonts.
 
-For public-source validation, set `CLEANFRAME_PUBLIC_FONTS=1` when running `check:browser`; the preview helper then excludes the local proprietary overlay. Run `npm run check:public` for the bounded source/history checks and `npm run export:public` for a widget that always excludes private fonts. The GitHub Actions workflow uses this public path. Browser/package checks do not clear third-party asset rights or validate TV behaviour.
+For manual UI review, run `npm run dev` and open `http://localhost:4795/home/`. Use arrow keys, Enter and Escape. Browser previews cannot validate launching native LG apps.
 
-If the default browser/cache location is unavailable, use a writable local path for both commands:
+## LG package checks
 
-```sh
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" npx playwright install chromium
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" npm run check:browser
-```
+Build an LG IPK as described in [development.md](development.md), or run **Build LG preview** on GitHub Actions.
 
-For manual review, use `npm run dev` and open `/home/`. Use the arrow keys, Enter and Escape. Check the changed flow in List and Dock, on Photo, Light and Dark backgrounds. Check a single app and all nine apps when changing app layout. In Settings, browse without applying, apply with OK, return with both Back routes, and cancel a pending resource load. Check editor placement/undo, wallpaper rotation pausing during panels/background time, and restored focus on return when those flows change. Browser preferences are separate from TV preferences.
+1. Confirm the package has the expected `appinfo.json`, LG adapter and required LG library.
+2. Confirm that the Samsung `config.xml` is not included as the LG app manifest.
+3. Review the exact IPK for credentials, private media and unauthorized font assets.
+4. Keep the app ID stable for compatible development updates.
+5. Record the package revision and checksum.
 
-## Physical TV checks
+## Physical LG TV checks
 
-Run these only under a task that includes TV testing. Announce any installation or launch first, then follow `development.md`. SDK success alone is not a visible result. Ask Nathan to confirm the normal remote behaviour and record the version, firmware, result and any open checks in `tv-status.md`.
+Perform these only with the device owner's explicit authorization and LG Developer Mode:
 
-1. Move in both directions through each layout and Settings; check focus, response and readable labels from the sofa.
-2. Launch Netflix/YouTube, press Home to return, and check the selected app. Treat streaming apps' own Back handling separately.
-3. Check Art Mode, Other apps, TV settings and Settings → Samsung → Samsung Home; verify the actual visible destinations.
-4. Check saved appearance/app order/wallpaper after relaunch. Check timed rotation pauses while a panel is open or the app is hidden.
-5. Test normal power-on after a streaming app and the usual Art Mode routine only when that work is included. Preserve the native Home recovery baseline and restore it before any uninstall/identity change.
+1. Install and open the app; verify safe exit to native LG Home.
+2. Check Dock/List navigation, focus visibility, OK/Back actions and remote usability.
+3. Verify settings, wallpapers, app order and persisted preferences after reopening.
+4. Launch configured applications that are actually installed, including YouTube if available, and record real results.
+5. Confirm unavailable apps produce understandable errors.
+6. Test the optional ambient player only when authorized media is packaged, including loop, pause/resume, mute and Back.
+7. Confirm existing streaming accounts, image settings and HDMI inputs are unaffected.
+8. Record TV model, webOS version, package version and observed limitations without personal device identifiers.
 
-The current pending results are listed at the top of `tv-status.md`. Browser CPU throttling is a development comparison, not a TV performance measurement.
+The project does not provide Samsung Art Mode, LG native Home replacement or global Home/Back interception.
+
+Review [PRIVACY-REVIEW.md](../PRIVACY-REVIEW.md) and [public-release.md](public-release.md) before public distribution.
