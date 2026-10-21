@@ -1,4 +1,6 @@
-# Interaction behaviour — 0.6.1
+> **Upstream Samsung Tizen reference (historical).** This document describes the original CleanFrame behavior, not guaranteed LG webOS features. In particular, Samsung Art Mode, Samsung Home integration, Tizen APIs and native Home/startup changes **do not apply to CleanFrame-LG**. For LG-specific capabilities and testing, see [README.md](../README.md), [development.md](development.md) and [testing.md](testing.md). References to the original author's equipment, private builds or unavailable status files belong to the upstream project and are not LG setup instructions.
+
+# Original CleanFrame interaction behavior (Samsung Tizen 0.6.1)
 
 ## Home
 
