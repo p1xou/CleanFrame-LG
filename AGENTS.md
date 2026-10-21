@@ -1,9 +1,19 @@
-# CleanFrame LG
+# AI agent instructions for CleanFrame-LG
 
-Read README.md and CREDITS.md. Keep original copyrights and third-party notices.
-Runtime code stays ES5 compatible. Keep device operations in webos/device.js and video playback in webos/art-player.js. Preserve remote navigation and saved preferences.
-Run npm run check, npm run check:lg and npm run check:public. Never commit .local, dist, SSH keys, account data, device addresses or private media. Do not publish packages containing private media.
-TV access, installs and launches require an explicit device task. Home/startup modifications require a separate explicit task; no native Home hooks are part of this LG port.
-Keep the repository private unless the owner explicitly requests a visibility change after reviewing the repository and its full history.
+Read [README.md](README.md), [WORKFLOW.md](WORKFLOW.md), [PRIVACY-REVIEW.md](PRIVACY-REVIEW.md), [CREDITS.md](CREDITS.md), [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) before making changes.
 
-Keep GitHub documentation, commit messages and release notes in English. Follow WORKFLOW.md: the private TV project and this sanitized checkout are separate. Develop and test in the TV project, then synchronize reviewed portable changes here. Never remove private media or device setup when preparing GitHub updates. Source pushes and TV installations are separate operations.
+## Development
+- This is an LG webOS adaptation of CleanFrame for Samsung Tizen. The original Tizen adapter and documentation are not LG installation instructions.
+- Preserve the original visual design, Dock/List navigation, remote focus behavior, saved preferences, and attribution.
+- Keep LG device operations in `webos/device.js` and ambient playback in `webos/art-player.js`. Preserve runtime compatibility with the target TV.
+- Do not change the installed app identity or user settings unless explicitly required.
+- Keep changes narrowly scoped and review the diff.
+
+## Verification
+- Run `npm run check`, `npm run check:lg` and `npm run check:public` when available. Report any skipped checks and do not confuse browser/cloud validation with testing on physical hardware.
+- Never commit secrets, device identifiers, local network details, private media, `.local/`, `dist/` or confidential logs.
+- Keep documentation and release notes in English.
+- Obtain explicit approval before installing on a TV, publishing releases, contacting third parties, or changing repository visibility. Editing permission is not publication permission.
+- A GitHub push does not install an update on a television.
+
+Follow [docs/development.md](docs/development.md) and [docs/testing.md](docs/testing.md) for LG-specific steps.
