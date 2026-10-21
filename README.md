@@ -28,7 +28,7 @@ The ambient player is not Samsung Art Mode or an LG hardware low-power mode. It 
 
 In Actions, manually run **Build LG preview**. The workflow checks the source, uses public fonts and packages the app with the official LG CLI. Its artifact contains an IPK and SHA-256 checksum. No TV credentials or home-network access are needed to build.
 
-No SSH keys, TV network address, passphrase, connection logs or private video are included in this repository. Without a supplied media file, the ambient button reports that no video is included. The private demonstration video is not part of the cloud build.
+The public cloud build does not require TV pairing credentials or home-network access. Personal media is not included. Without an authorized media file, the ambient button reports that no video is available.
 
 ## Local preparation
 
@@ -48,7 +48,7 @@ npm run prepare:lg
 ares-package dist/webos-app -o dist
 ```
 
-The `app/` source retains the original visual engine and Tizen adapter for comparison. LG preparation replaces the adapter, IDs and metadata in `dist/webos-app`. Do not install the Tizen manifest on an LG TV. Historical documents under `docs/` describe the original Samsung project; this README describes the LG adaptation.
+The `app/` source retains the original visual engine and Tizen adapter for comparison. LG preparation replaces the adapter, IDs and metadata in `dist/webos-app`. Do not install the Tizen manifest on an LG TV. See [LG development](docs/development.md) and [testing](docs/testing.md) for current instructions. The [upstream interaction reference](docs/interaction-behaviour.md) documents Samsung behavior separately.
 
 Follow [LG Developer Mode instructions](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app) from an authorized computer on the same network. Device configuration and keys stay on that computer. Never add them to the repository or Actions logs.
 
