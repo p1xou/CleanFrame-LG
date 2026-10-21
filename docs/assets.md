@@ -1,6 +1,6 @@
 # Asset generation
 
-The app includes all runtime JPEGs, thumbnails, registered material fields, public fonts and icons. A clone can preview the current app without the original Downloads folder or any generation step. Keep photo and icon credits and third-party licences with the assets. The private Pangram overlay is described in [development](development.md).
+The app includes all runtime JPEGs, thumbnails, registered material fields, public fonts and icons. A clone can preview the current app without the original Downloads folder or any generation step. Keep photo and icon credits and third-party licences with the assets. Optional proprietary fonts are excluded from public distributions; see [third-party notices](../THIRD_PARTY_NOTICES.md).
 
 ## Current List and Dock materials
 
@@ -33,7 +33,7 @@ Full-size original photographs are local inputs and are not required for glass r
 python3 scripts/prepare-wallpapers.py /path/to/originals --ids summit,goldcoast,sydney,amber,mint,alpine
 ```
 
-The retained generator covers all fifteen filenames and writes `.local/materials/wallpapers/`. The original nine keep their macOS `sips` recipe. The new six require Pillow and use the reviewed centred crop and JPEG settings; Pillow is a development dependency only. Supply Golden Hour as `big-sur-golden-hour.jpg` in the originals folder. Install Pillow in a local Python environment when using the six newer photos.
+The retained generator covers all fifteen filenames and writes `.local/materials/wallpapers/`. The original nine use a macOS `sips` recipe when those source files are available. The new six require Pillow and use the reviewed centred crop and JPEG settings; Pillow is a development dependency only. Supply Golden Hour as `big-sur-golden-hour.jpg` in the originals folder. Install Pillow in a local Python environment when using the six newer photos.
 
 For another photo, add its source/credit to `SOURCES.json`, prepare its background and thumbnail, add the gallery entry in `catalog.js`, generate the four registered materials and panel backdrop, then measure and review its foreground metadata. Keep the crop identical across all assets. Run source and browser checks before packaging.
 
