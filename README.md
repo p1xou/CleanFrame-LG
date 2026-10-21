@@ -52,11 +52,13 @@ The `app/` source retains the original visual engine and Tizen adapter for compa
 
 Follow [LG Developer Mode instructions](https://webostv.developer.lge.com/develop/getting-started/developer-mode-app) from an authorized computer on the same network. Device configuration and keys stay on that computer. Never add them to the repository or Actions logs.
 
-## Development and updates
+## Development and contributions
 
-The private TV project and this GitHub checkout are separate copies. The TV project retains its local media, tools, device configuration and installation records. Preparing GitHub updates does not remove or replace them.
+Want to customize CleanFrame-LG, fix a bug, or improve compatibility with another LG webOS TV? Start with the [contributor workflow](WORKFLOW.md). It is written for both human developers and AI coding agents and covers understanding the codebase, making changes, running checks, testing on a TV, and proposing contributions.
 
-Develop and test requested TV changes in the private project, then synchronize reviewed portable source changes and English documentation here. Keep the repository private. A push does not install an update on the TV. See [WORKFLOW.md](WORKFLOW.md).
+You can fork the repository and develop your changes in your own environment. Preserve the original CleanFrame attribution and third-party licensing requirements, and never commit TV pairing credentials, private media, or other sensitive files.
+
+A GitHub commit or cloud build does not automatically install an update on your TV. Follow the installation instructions above when testing a new package.
 
 ## License and credits
 
