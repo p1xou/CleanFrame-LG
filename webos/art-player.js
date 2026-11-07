@@ -17,6 +17,7 @@
     }
     if (layer) layer.parentNode.removeChild(layer);
     layer = null; video = null; status = null;
+    if (window.FrameWallpaper) window.FrameWallpaper.resume('art');
     settle(error);
     var stage = document.getElementById('stage');
     if (stage) stage.focus();
@@ -31,6 +32,7 @@
   function open(done) {
     if (layer) { done(null); return; }
     if (!config.src) { done({ message: 'No ambient video is included in this build.' }); return; }
+    if (window.FrameWallpaper) window.FrameWallpaper.suspend('art');
     pending = done;
     layer = document.createElement('section');
     layer.setAttribute('role', 'dialog');

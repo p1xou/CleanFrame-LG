@@ -34,6 +34,7 @@
     { id: '60', name: 'Every hour', min: 60 }
   ];
   var KEY = 'cleanframe.home.v1', storageOk = true, catalog = { loading: false, loaded: false, error: null, request: 0, revision: 0 };
+  var VIDEO = window.FrameWallpaper || null, CLIPS = VIDEO ? VIDEO.available() : [], videoKey = '', videoRequest = 0, videoTimer = 0;
   var QA = window.ShoreQA = { minuteMs: window.ShoreQA && window.ShoreQA.minuteMs || 60000 };
   var FONTS = {
     manrope: { name: 'Manrope', family: 'Manrope', display: 600, ui: 500, clock: 500 },
@@ -48,6 +49,7 @@
   var LOOK_VALUES = { bg: ['dark', 'light', 'photo'], layout: ['list', 'dock'], apps: ['icons', 'both', 'text'], font: Object.keys(FONTS).filter(function (id) { return id === 'manrope' || PRIVATE_FONTS.indexOf(id) >= 0; }), controls: ['icons', 'both', 'text'], focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] };
   var LOOK_NAMES = { bg: 'Background', layout: 'Layout', apps: 'Apps', font: 'Font', controls: 'Home controls', focus: 'Focus', material: 'Material' };
   var VALUE_NAMES = { dark: 'Dark', light: 'Light', photo: 'Photo', list: 'List', dock: 'Dock', type: 'Type', glass: 'Glass', soft: 'Soft', frost: 'Frost', tint: 'Clear tint', icons: 'Icons', both: 'Icons and text', text: 'Text' };
+  if (VIDEO) { LOOK_VALUES.bg.push('video'); VALUE_NAMES.video = 'Video'; }
   var UTIL = { art: ['Art Mode', 'art'], apps: ['All apps', 'apps'], arrange: ['Arrange', 'arrange'], settings: ['Settings', 'settings'] };
   var MSG = {
     leave: { title: 'Leave Home?', line: 'Open Samsung Home?', note: '', actions: [['stay', 'Stay'], ['samsung', 'Samsung Home']] }
@@ -86,7 +88,9 @@
     for (var i = 0; i < list.length; i++) if (list[i].toLowerCase() === v) return list[i];
     return fallback;
   }
-  function lookOf(c) { return { bg: c.bg, wall: c.wall, layout: c.layout, apps: c.apps, font: c.font, controls: c.controls, focus: c.focus, material: c.material }; }
+  function lookOf(c) { return { bg: c.bg, wall: c.wall, layout: c.layout, apps: c.apps, font: c.font, controls: c.controls, focus: c.focus, material: c.material, videoWall: c.videoWall, videoFits: c.videoFits }; }
+  function clip(id) { for (var i = 0; i < CLIPS.length; i++) if (CLIPS[i].id === id) return CLIPS[i]; return null; }
+  function clipFit(id) { var v = clip(id); return S.c.videoFits[id] || (v && v.defaultFit) || 'cover'; }
   function materialApplies(c) { c = c || S.c; return c.bg === 'photo' && (c.layout === 'dock' || c.focus === 'glass'); }
   function derivedTheme() { return S.c.layout === 'list' ? 'list' : 'shore'; }
 
@@ -346,8 +350,17 @@
       focus: pick(modern.focus, LOOK_VALUES.focus, legacyList ? 'type' : 'glass'), material: pick(modern.material, LOOK_VALUES.material, 'soft'),
       font: pick(modern.font, LOOK_VALUES.font, 'manrope'), wall: wall(modern.wall || s.wallpaper) ? modern.wall || s.wallpaper : WALLS[0].id,
       home: h, recent: recent, lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
-      mode: pick(s.mode, MODES.map(function (m) { return m.id; }), 'fixed')
+      mode: pick(s.mode, MODES.map(function (m) { return m.id; }), 'fixed'),
+      videoWall: safeId(modern.videoWall || s.videoWall) ? modern.videoWall || s.videoWall : '',
+      videoFits: cleanVideoFits(modern.videoFits || s.videoFits)
     };
+  }
+  function cleanVideoFits(saved) {
+    var out = {};
+    if (saved && typeof saved === 'object') Object.keys(saved).slice(0, 256).forEach(function (id) {
+      if (safeId(id) && (saved[id] === 'cover' || saved[id] === 'contain')) out[id] = saved[id];
+    });
+    return out;
   }
   function serialise(c) {
     var out = {}, id;
@@ -365,7 +378,7 @@
     var saved = load(), initial; S.c = clean(saved); initial = next(S.c.home.slice(), S.c.recent.slice());
     S.stack = [{ id: 'home', f: { zone: 'apps', u: 0 } }];
     S.sel = S.c.lastApp; S.selIdx = S.c.home.indexOf(S.sel);
-    if (saved && initial.mode === 'open') initial.wall = WALLS[(wallIndex(initial.wall) + 1) % WALLS.length].id;
+    if (saved && initial.mode === 'open' && initial.bg !== 'video') initial.wall = WALLS[(wallIndex(initial.wall) + 1) % WALLS.length].id;
     // Keep the old schema keys alongside the builder values for in-place updates.
     try { localStorage.setItem(KEY, JSON.stringify(serialise(initial))); S.c = initial; storageOk = true; } catch (e) { storageOk = false; }
   }
@@ -526,7 +539,7 @@
     push({ id: 'wallpaper', i: i, top: clamp(i - 2, 0, Math.max(0, WALLS.length - WALL_VISIBLE)), f: { zone: 'photo' },
       previewTimer: 0, previewDue: null, applyPending: null, failedId: null, failedApply: false, retryBundle: null });
   }
-  function isSettingsDetail(t) { return t.id === 'appearance' || t.id === 'wallpaper'; }
+  function isSettingsDetail(t) { return t.id === 'appearance' || t.id === 'wallpaper' || t.id === 'videoWallpaper'; }
 
   var V = {};
 
@@ -676,6 +689,118 @@
       else if (z === 'wall-choice' && i >= 0 && i < WALLS.length) {
         if (i === t.i) { t.f.zone = 'photo'; this.key(t, 'ok'); }
         else previewWallpaper(t, i, true);
+      }
+    }
+  };
+
+  /* ---------- Installed apps ---------- */
+  /* Video uses the existing Home preview and one decoder; browsing never saves. */
+  function openVideoWallpaper() {
+    var i = 0;
+    CLIPS.forEach(function (v, n) { if (v.id === S.c.videoWall) i = n; });
+    S.err = null;
+    push({ id: 'videoWallpaper', i: i, top: 0, fit: CLIPS[i] ? clipFit(CLIPS[i].id) : 'cover',
+      f: { zone: CLIPS.length ? 'clip' : 'back' }, ready: false, error: null, applying: false });
+  }
+  function videoCandidate(t) { return CLIPS[t.i] ? { id: CLIPS[t.i].id, fit: t.fit } : null; }
+  function closeVideoWallpaper() {
+    S.err = null; pop();
+    if (top().id === 'appearance') detailFocus(top(), { action: 'choice.bg.video' }, 0);
+  }
+  function browseVideo(t, i) {
+    t.i = i; t.fit = clipFit(CLIPS[i].id); t.error = null; t.ready = false; t.applying = false; t.f.zone = 'clip'; S.err = null;
+  }
+  function applyVideoWallpaper(t) {
+    var v = videoCandidate(t), c, fits;
+    if (!v) return;
+    if (t.error) { t.error = null; t.ready = false; videoKey = ''; }
+    if (!t.ready) { t.applying = true; return; }
+    if (S.bundleKey !== bundleKey(S.c)) {
+      t.applying = true;
+      if (t.photoPending) return;
+      t.photoPending = true;
+      loadBundle(S.c, wallToken, function (bundle) {
+        t.photoPending = false;
+        if (top() !== t || !t.applying) return;
+        if (!bundle) { t.error = 'Couldn’t prepare your saved photo. Your current wallpaper is kept.'; t.applying = false; }
+        else { installBundle(bundle, S.c); committedBundle = bundle; applyVideoWallpaper(t); }
+        render(); syncRotation();
+      });
+      return;
+    }
+    t.applying = false;
+    if (S.c.bg === 'video' && S.c.videoWall === v.id && clipFit(v.id) === v.fit) return;
+    c = next(S.c.home.slice(), S.c.recent.slice()); fits = cleanVideoFits(S.c.videoFits); fits[v.id] = v.fit;
+    c.bg = 'video'; c.videoWall = v.id; c.videoFits = fits;
+    if (!write(c, 'Video wallpaper')) { t.error = 'Couldn’t save. Your current wallpaper is kept.'; t.ready = false; return; }
+    S.shown = lookOf(c); resetRotation();
+  }
+  function syncVideoWallpaper(t) {
+    if (!VIDEO) return;
+    var desired = null, candidate = t.id === 'videoWallpaper', key, request;
+    if (candidate && !t.error) desired = videoCandidate(t);
+    else if (S.c.bg === 'video' && t.id !== 'wallpaper' && (t.id === 'home' || isSettingsDetail(t))) {
+      desired = clip(S.c.videoWall) ? { id: S.c.videoWall, fit: clipFit(S.c.videoWall) } : null;
+      if (candidate && t.error && desired && desired.id === CLIPS[t.i].id && desired.fit === t.fit) desired = null;
+    }
+    key = desired ? desired.id + '|' + desired.fit : '';
+    if (key === videoKey) {
+      var playing = VIDEO.state();
+      if (candidate && !t.error) { t.ready = !!desired && playing.ready && playing.id === desired.id && playing.fit === desired.fit; if (t.ready && t.applying) applyVideoWallpaper(t); }
+      return;
+    }
+    videoKey = key; request = ++videoRequest;
+    clearTimeout(videoTimer); videoTimer = 0;
+    if (!desired) { VIDEO.hide(); return; }
+    if (candidate) t.ready = false;
+    function play() { VIDEO.show(desired, function (error) {
+      if (request !== videoRequest) return;
+      if (candidate && top() === t) {
+        t.ready = !error;
+        if (error) { t.error = error.message || 'Couldn’t play this video. Your current wallpaper is kept.'; t.applying = false; }
+        else if (t.applying) applyVideoWallpaper(t);
+      }
+      render(); syncRotation();
+    }); }
+    if (candidate) videoTimer = setTimeout(function () { if (request === videoRequest && top() === t) play(); }, WALL_DELAY);
+    else play();
+  }
+  V.videoWallpaper = {
+    norm: function (t) {
+      if (t.i < t.top) t.top = t.i;
+      if (t.i >= t.top + 4) t.top = t.i - 3;
+    },
+    key: function (t, k) {
+      if (k === 'back') { closeVideoWallpaper(); return; }
+      if (t.f.zone === 'back') {
+        if (k === 'ok') closeVideoWallpaper();
+        else if ((k === 'down' || k === 'right') && CLIPS.length) t.f.zone = 'clip';
+      } else if (t.f.zone === 'retry') {
+        if (k === 'ok') { t.error = null; t.ready = false; videoKey = ''; t.f.zone = 'clip'; S.err = null; }
+        else if (k === 'left' || k === 'up') t.f.zone = 'fit';
+      } else if (t.f.zone === 'fit') {
+        if (k === 'up') t.f.zone = 'clip';
+        else if (k === 'down' && t.error) t.f.zone = 'retry';
+        else if (k === 'left' || k === 'right') {
+          var fit = k === 'left' ? 'cover' : 'contain';
+          if (t.fit !== fit) { t.fit = fit; t.ready = false; t.error = null; t.applying = false; S.err = null; }
+        } else if (k === 'ok') applyVideoWallpaper(t);
+      } else {
+        if (k === 'left' || k === 'up' && t.i === 0) { t.f.zone = 'back'; t.applying = false; }
+        else if (k === 'up') browseVideo(t, t.i - 1);
+        else if (k === 'down' && t.i < CLIPS.length - 1) browseVideo(t, t.i + 1);
+        else if (k === 'down' || k === 'right') t.f.zone = 'fit';
+        else if (k === 'ok') applyVideoWallpaper(t);
+      }
+    },
+    point: function (t, z, i) {
+      if (z === 'video-back') closeVideoWallpaper();
+      else if (z === 'video-retry') { t.f.zone = 'retry'; this.key(t, 'ok'); }
+      else if (z === 'video-clip' && CLIPS[i]) { if (i !== t.i) browseVideo(t, i); t.f.zone = 'clip'; applyVideoWallpaper(t); }
+      else if (z === 'video-fit' && CLIPS.length) {
+        var fit = i ? 'contain' : 'cover';
+        if (fit !== t.fit) { t.fit = fit; t.ready = false; t.error = null; }
+        t.f.zone = 'fit'; applyVideoWallpaper(t);
       }
     }
   };
@@ -850,8 +975,8 @@
     var flat = S.c.bg !== 'photo', inactive = !materialApplies();
     function options(axis, values, disabled) { return values.map(function (value) { return choice(axis, value, disabled); }); }
     if (t.group === 'background') return [
-      { id: 'bg', title: 'Background type', items: options('bg', ['photo', 'light', 'dark']) },
-      { id: 'wall', title: 'Wallpaper', items: [{ action: 'background.wallpaper', label: wall(S.c.wall).name, thumbnail: true, disabled: flat }] },
+      { id: 'bg', title: 'Background type', items: options('bg', VIDEO ? ['photo', 'light', 'dark', 'video'] : ['photo', 'light', 'dark']) },
+      { id: 'wall', title: 'Wallpaper', items: [{ action: S.c.bg === 'video' ? 'background.video' : 'background.wallpaper', label: S.c.bg === 'video' ? (clip(S.c.videoWall) || {}).title || 'Choose a local video' : wall(S.c.wall).name, thumbnail: S.c.bg !== 'video', disabled: flat && S.c.bg !== 'video' }] },
       { id: 'rotation', title: 'Rotation', items: [{ action: 'background.rotation', label: mode().name, disabled: flat }], reason: flat ? 'Choose Photo to use wallpaper and rotation.' : '' }
     ];
     if (t.group === 'layout') return [
@@ -911,8 +1036,10 @@
       if (error && error.row === 'mode') applyRotation(error.patch.mode);
       else if (error) setLook(error.patch, { row: error.row });
     } else if (item.axis === 'mode') applyRotation(item.value);
+    else if (item.axis === 'bg' && item.value === 'video') openVideoWallpaper();
     else if (item.axis) { patch[item.axis] = item.value; setLook(patch, { row: item.axis }); }
     else if (item.action === 'background.wallpaper') openWallpaper();
+    else if (item.action === 'background.video') openVideoWallpaper();
     else if (item.action === 'background.rotation') openAppearance('rotation');
     else if (item.action === 'samsung.home') perform('Samsung Home', FrameDevice.home);
     else if (item.action === 'samsung.settings') perform('TV settings', FrameDevice.settings);
@@ -1017,14 +1144,23 @@
   }
   function render() {
     var t = top(), sheet = !!V[t.id].sheet, shown = wall(S.shown ? S.shown.wall : S.c.wall), palette = ADAPTIVE_INK[shown.id];
+    syncVideoWallpaper(t);
     var adaptive = applyAdaptiveInk(palette), tr = adaptive && palette.tr ? palette.tr.pol : shown.ut.tr, br = adaptive && palette.br ? palette.br.pol : shown.ut.br;
     stage.className = 'stage bg-' + S.c.bg + ' l-' + S.c.layout + ' v-' + S.variant + ' m-' + (materialApplies() ? S.c.material : 'none') + ' f-' + S.c.focus + ' a-' + S.c.apps + ' u-' + S.c.controls + ' g-' + S.geom + ' tone-' + shown.tone + ' tr-' + tr + ' br-' + br + wallClasses(shown) + inkRungClasses(palette, adaptive) + ' at-' + t.id + ' font-' + homeFont() + (homeFont() !== 'manrope' ? ' font-custom' : '') + (S.fontSwitch ? ' is-font-switch' : '') + (adaptive ? ' has-adaptive-ink adaptive-tl-' + palette.tl.pol : '') + (!adaptive && shown.clockInk ? ' has-clock-ink' : '') + (!adaptive && shown.dockClockInk ? ' has-dock-clock-ink' : '') + (registeredMaterial(shown.id) ? ' registered-material' : '') + (sheet ? ' is-sheet' : '') + (S.reflow ? ' is-reflow' : '');
+    if (VIDEO) stage.className += ' has-video-wallpaper';
+    if (t.id === 'videoWallpaper') stage.className += ' previewing-video';
     if (!adaptive && shown.clockInk) stage.style.setProperty('--clock-ink', shown.clockInk);
     else stage.style.removeProperty('--clock-ink');
     if (!adaptive && shown.dockClockInk) stage.style.setProperty('--dock-clock-ink', shown.dockClockInk);
     else stage.style.removeProperty('--dock-clock-ink');
     applyHomeFont();
     if (!sheet) renderHome(t);
+    if (VIDEO) {
+      var notice = $('videoWallpaperNotice'), unavailable = S.c.bg === 'video' && (!clip(S.c.videoWall) || VIDEO.state().error);
+      if (!notice) { notice = document.createElement('p'); notice.id = 'videoWallpaperNotice'; notice.className = 'video-wallpaper-notice'; notice.setAttribute('role', 'status'); homeEl.appendChild(notice); }
+      notice.hidden = t.id !== 'home' || !unavailable;
+      if (unavailable) notice.textContent = 'Video unavailable. Your photo is kept. Open Settings → Background to choose or retry.';
+    }
     renderSheet(t, sheet);
     renderAppearance(t);
     renderFocusStatus(t);
@@ -1380,6 +1516,7 @@
     if (appearanceEl.hidden) { appearanceEl.removeAttribute('aria-modal'); return; }
     appearanceEl.setAttribute('aria-modal', 'true');
     if (t.id === 'wallpaper') { renderWallpaper(t); return; }
+    if (t.id === 'videoWallpaper') { renderVideoWallpaper(t); return; }
     V.appearance.norm(t);
     appearanceEl.className = 'appearance detail-' + t.group;
     appearanceRows.className = 'appearance-rows';
@@ -1400,7 +1537,8 @@
         + '<div class="setting-options"' + (section.items[0].axis ? ' role="radiogroup" aria-label="' + esc(section.title || LOOK_NAMES[section.id] || DETAIL_NAMES[t.group]) + '"' : '') + '>'
         + section.items.map(function (item) {
           var swatch = item.axis === 'bg', body = '';
-          if (swatch || item.thumbnail) body += item.value === 'light' || item.value === 'dark'
+          if (item.value === 'video') body += '<span class="setting-swatch video-swatch" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 5 19 12 9 19Z"/></svg></span>';
+          else if (swatch || item.thumbnail) body += item.value === 'light' || item.value === 'dark'
             ? '<span class="setting-swatch swatch-' + item.value + '" aria-hidden="true"></span>'
             : '<img class="setting-swatch" src="' + WP + S.c.wall + '-thumb.jpg" alt="">';
           body += '<span class="setting-copy"><span class="setting-name">' + esc(item.label) + '</span>'
@@ -1458,6 +1596,35 @@
   }
   /* Keep the retry or membership state on the focused control. The stage-level line
      shares its position without changing the control's identity or key behaviour. */
+  function renderVideoWallpaper(t) {
+    V.videoWallpaper.norm(t);
+    appearanceEl.className = 'appearance detail-video'; appearanceTitle.textContent = 'Video wallpaper';
+    appearanceRows.className = 'appearance-rows video-picker';
+    function button(z, i, action, label, focus, checked, extra) {
+      return '<button type="button" tabindex="-1" class="setting-choice' + (focus ? ' is-focus' : '') + (checked ? ' is-applied' : '') + (extra || '')
+        + '" data-z="' + z + '" data-i="' + i + '" data-action="' + action + '"' + (z === 'video-clip' || z === 'video-fit' ? ' role="radio" aria-checked="' + !!checked + '"' : '') + '>'
+        + '<span class="setting-copy"><span class="setting-name">' + esc(label) + '</span></span><span class="setting-tick">' + (checked ? icon('check') : '') + '</span></button>';
+    }
+    setHTML(appearanceBack, button('video-back', 0, 'video.back', 'Background', t.f.zone === 'back', false, ' setting-back'));
+    if (!CLIPS.length) {
+      setHTML(appearanceRows, '<p class="setting-reason">No video is included in this build. Add a video you are authorized to use when preparing the LG app.</p>');
+      setHTML(appearanceStatus, '<p>Your photos and current wallpaper are kept.</p>');
+      setHTML(appearanceDesc, '<span class="remote-key">Back</span><span>Return to Background</span>'); return;
+    }
+    var v = CLIPS[t.i], applied = S.c.bg === 'video' && S.c.videoWall === v.id && clipFit(v.id) === t.fit;
+    var rows = '<div class="video-list" role="radiogroup" aria-label="Video wallpaper">' + CLIPS.map(function (c, i) {
+      return '<div class="video-row" style="top:' + ((i - t.top) * 84) + 'px">' + button('video-clip', i, 'video.choose.' + c.id, c.title, t.f.zone === 'clip' && t.i === i, S.c.bg === 'video' && S.c.videoWall === c.id, '') + '</div>';
+    }).join('') + '</div><section class="setting-section is-horizontal"><h3 class="setting-label">Fit · 16:9</h3><div class="setting-options" role="radiogroup" aria-label="Video fit">'
+      + button('video-fit', 0, 'video.fit.cover', 'Crop to fill', t.f.zone === 'fit' && t.fit === 'cover', applied && t.fit === 'cover', '')
+      + button('video-fit', 1, 'video.fit.contain', 'Show all', t.f.zone === 'fit' && t.fit === 'contain', applied && t.fit === 'contain', '') + '</div><p class="setting-reason">' + (t.fit === 'cover' ? 'Fills the screen; edges may be cropped.' : 'Preserves the whole image; may add dark bars.') + '</p></section>';
+    setHTML(appearanceRows, rows);
+    var note = t.error || (!t.ready ? (t.applying ? 'Applying…' : 'Loading preview…') : applied ? 'Applied · muted · loop' : 'Preview · not saved · muted · loop');
+    var status = '<p class="wallpaper-preview-name">' + esc(v.title) + '</p><p' + (t.error ? ' class="setting-error"' : '') + '>' + esc(note) + '</p>';
+    if (t.error) status += button('video-retry', 0, 'video.retry', 'Try again', t.f.zone === 'retry', false, ' setting-retry');
+    setHTML(appearanceStatus, status);
+    setHTML(appearanceDesc, '<span class="remote-key">OK</span><span>Apply video and fit · Back cancels preview</span>');
+  }
+
   function renderFocusStatus(t) {
     if (isSettingsDetail(t)) { focusStatus.className = 'focus-status'; return; }
     var root = isSettingsDetail(top()) ? appearanceEl : sheetEl.hidden ? homeEl : sheetEl, active = root.querySelectorAll('.is-focus[data-action]'), target = null, text = S.err ? 'Not saved. OK tries again.' : '', i, r, sr, scale, x, y, w, action, solid, photoRow = false, photoFree = false;
@@ -1704,7 +1871,7 @@
       if (!imageDone || !fontDone || failed || token !== wallToken) return;
       window.requestAnimationFrame(function () { if (!failed && token === wallToken) finish(loadedBundle); });
     }
-    needs = target.bg === 'photo' && S.bundleKey !== bundleKey(target) && (!S.shown || S.shown.bg !== 'photo' || target.wall !== S.c.wall || materialApplies(target));
+    needs = (target.bg === 'photo' || target.bg === 'video') && S.bundleKey !== bundleKey(target) && (!S.shown || S.shown.bg !== 'photo' || target.wall !== S.c.wall || materialApplies(target));
     needsFont = !fontMetrics[target.font]; imageDone = !needs; fontDone = !needsFont;
     if (!needs && !needsFont) { finish(null); return; }
     S.pending = { patch: changes, target: target, row: opts.row || (needsFont ? 'font' : S.appearanceFocus), transient: !!opts.transient, preview: false };
@@ -1843,6 +2010,12 @@
     else { release(); after(); updateClock(); focusStage(); }
   });
   window.addEventListener('resize', fit);
+  document.addEventListener('cleanframewallpaperchange', function () {
+    if (!S.stack) return;
+    var t = top(), state = VIDEO.state();
+    if (t.id === 'videoWallpaper' && state.error && !t.error && CLIPS[t.i] && state.id === CLIPS[t.i].id && state.fit === t.fit) { t.error = state.error.message; t.ready = false; t.applying = false; }
+    render();
+  });
 
   /* Readable browser checks use the real state and actions, without fake outcomes. */
   var NAV = { left: 'left', right: 'right', up: 'up', down: 'down', ok: 'ok', enter: 'ok', back: 'back', escape: 'back' };
@@ -1859,6 +2032,7 @@
     out.candidate = out.focusedChoice ? { axis: item.axis, value: item.value, action: item.action, pending: !!S.pending, pendingTarget: S.pending ? S.pending.target : null } : null;
     out.wallpaperPicker = t.id === 'wallpaper' ? { candidate: WALLS[t.i].id, applied: S.c.wall, shown: S.wallShown, pending: t.previewDue || S.wallPending,
       queuedApplying: !!t.applyPending, applyPending: t.applyPending, failed: t.failedId, zone: t.f.zone, top: t.top, visible: WALL_VISIBLE, backdrop: IMG.bg.src } : null;
+    out.videoWallpaper = VIDEO ? { playback: VIDEO.state(), candidate: t.id === 'videoWallpaper' ? videoCandidate(t) : null, ready: !!t.ready, error: t.error || null, applying: !!t.applying } : null;
     out.undo = S.undo.map(function (u) { return u.label; }); out.storageOk = storageOk;
     return JSON.parse(JSON.stringify(out));
   };

@@ -1,6 +1,6 @@
 {
   "id": "io.cleanframe.lg.preview",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "vendor": "CleanFrame-LG",
   "type": "web",
   "main": "index.html",

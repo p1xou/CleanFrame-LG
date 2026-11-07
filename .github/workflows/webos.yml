@@ -22,6 +22,7 @@ jobs:
       - run: npm run check
       - run: node scripts/webos/check-adapter.mjs
       - run: node scripts/webos/check-art.mjs
+      - run: node scripts/webos/check-wallpaper.mjs
       - run: npm run check:public
       - run: npm run export:public
       - run: |
