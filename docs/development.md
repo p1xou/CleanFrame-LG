@@ -17,12 +17,15 @@ npm run check:public
 
 Optional browser tests require Playwright Chromium: `npx playwright install chromium`, then `npm run check:browser`.
 
+The video wallpaper browser check is `npm run check:wallpaper`. It uses synthetic clips with the production UI and Chromium playback, without TV access or third-party footage. See [testing.md](testing.md) for its scope.
+
 ## Architecture
 
 - `app/`: original visual engine, assets, layouts, preferences and the original Tizen adapter.
 - `webos/device.js`: LG device and app-launching adapter.
 - `webos/apps.json`: configured LG application IDs.
 - `webos/art-player.js`: optional ambient video player.
+- `webos/wallpaper-player.js`: optional Home video wallpaper and live Settings preview, sharing one video instance and releasing it for the ambient player.
 - `webos/appinfo.json`: webOS package metadata and installed app ID.
 - `scripts/webos/prepare.mjs`: assembles the webOS application under ignored `dist/webos-app/`.
 
@@ -40,6 +43,12 @@ ares-package dist/webos-app -o dist
 ```
 
 Optionally supply a licensed MP4 or WebM ambient video with `CLEANFRAME_ART_VIDEO`. Personal media is not included by default and should never be uploaded without redistribution rights.
+
+For optional video wallpapers, set `CLEANFRAME_WALLPAPER_MANIFEST` to a JSON manifest under ignored `.local/`. It contains `clips` with `id`, `title`, `file`, a `defaultFit` of `cover` or `contain`, and optional `coverFile`/`containFile` paths relative to the manifest. See [video-wallpaper.md](video-wallpaper.md) for the complete example and validation rules. The build copies selected local MP4/WebM files without transcoding; no media is downloaded or included by default. Preserve `CLEANFRAME_ART_VIDEO` when rebuilding a private package that needs its existing authorized ambient clip.
+
+Settings → Background → Video opens the Video wallpaper picker. Focus previews without saving; OK applies, and Back restores the latest applied choice. Fit is saved per clip. The Wallpaper row reopens this picker when Video is active; photo selection and rotation settings remain retained.
+
+LG supports a single simultaneous video stream. Do not introduce separate preview and Home decoders or overlap the wallpaper with the ambient player. Native video-plane clipping and small preview behavior can differ from Chromium, and `object-fit` alone is not a TV compatibility guarantee. Use authorized pre-fitted 16:9 variants when needed and verify on the target TV. Keep the existing graphics resolution and package identity; browser tests cannot prove 4K decoding, fluidity or a gapless loop.
 
 Alternatively, run **Build LG preview** in GitHub Actions to generate a reviewable IPK and SHA-256 checksum without installing tools locally. Successful packaging is not proof of functionality on physical hardware.
 

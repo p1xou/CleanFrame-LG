@@ -11,7 +11,8 @@
     "export:public": "python3 scripts/export-public.py",
     "check:public": "python3 scripts/check-public.py",
     "prepare:lg": "node scripts/webos/prepare.mjs",
-    "check:lg": "node scripts/webos/check-adapter.mjs && node scripts/webos/check-art.mjs"
+    "check:lg": "node scripts/webos/check-adapter.mjs && node scripts/webos/check-art.mjs && node scripts/webos/check-wallpaper.mjs",
+    "check:wallpaper": "node scripts/webos/check-wallpaper-browser.mjs"
   },
   "devDependencies": {
     "playwright": "1.64.1"

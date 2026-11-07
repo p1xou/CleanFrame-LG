@@ -12,6 +12,7 @@ This is an independent adaptation, not endorsed or maintained by Nathan Clark, L
 - Launching existing apps through LG's public API; accounts remain inside their respective apps.
 - A configured application catalog checked with `getAppLoadStatus`.
 - An internal ambient video player: looping, muted playback, OK to pause/resume and Back to close.
+- Optional video wallpapers: live clip previews, OK to apply, Back to cancel an unapplied choice, and a saved Cover/Contain fit for each clip. Existing photo wallpapers and settings remain available.
 - Additive installation through Developer Mode and the official LG CLI, without root.
 
 The interface and Netflix, YouTube, Prime Video, Stremio and Apple TV launch targets have been tested on an LG OLED B4 running webOS 25. This does not establish compatibility with every model, region or firmware. The IDs in `webos/apps.json` are public application identifiers, not account credentials.
@@ -24,11 +25,13 @@ Developer Mode sessions are time-limited: use EXTEND before expiration. Disablin
 
 The ambient player is not Samsung Art Mode or an LG hardware low-power mode. It does not change system OLED protections. 4K playback depends on the media and decoder; the loop boundary may have a visible transition.
 
+Video wallpaper uses one decoder shared between Home and its live preview, and releases it for the ambient player. Browser previews do not establish native TV cropping or preview rendering: LG's video plane may require a prepared 16:9 file. See [video wallpaper setup and limitations](docs/video-wallpaper.md). Physical verification of this new feature must be recorded separately from the earlier LG app tests above.
+
 ## Cloud builds
 
 In Actions, manually run **Build LG preview**. The workflow checks the source, uses public fonts and packages the app with the official LG CLI. Its artifact contains an IPK and SHA-256 checksum. No TV credentials or home-network access are needed to build.
 
-The public cloud build does not require TV pairing credentials or home-network access. Personal media is not included. Without an authorized media file, the ambient button reports that no video is available.
+The public cloud build does not require TV pairing credentials or home-network access. Personal media is not included. Without an authorized media file, the ambient button reports that no video is available. The optional video wallpaper catalogue is empty unless a local manifest is supplied.
 
 ## Local preparation
 
@@ -47,6 +50,10 @@ Set `CLEANFRAME_WEBOSTV_JS` to the official webOSTV.js file with its adjacent li
 npm run prepare:lg
 ares-package dist/webos-app -o dist
 ```
+
+For video wallpapers, also set `CLEANFRAME_WALLPAPER_MANIFEST` to an ignored local manifest listing authorized clips and optional prepared Cover/Contain variants. The build copies the files without re-encoding or downloading media; it does not add real 4K detail to a lower-resolution source. Follow [the manifest example](docs/video-wallpaper.md), then open Settings → Background → Video to enter the Video wallpaper picker. The Wallpaper row reopens it while Video is active.
+
+Run `npm run check:wallpaper` after installing Playwright Chromium to exercise the video wallpaper UI with synthetic footage in a browser. This command does not contact a TV or use private clips.
 
 The `app/` source retains the original visual engine and Tizen adapter for comparison. LG preparation replaces the adapter, IDs and metadata in `dist/webos-app`. Do not install the Tizen manifest on an LG TV. See [LG development](docs/development.md) and [testing](docs/testing.md) for current instructions. The [upstream interaction reference](docs/interaction-behaviour.md) documents Samsung behavior separately.
 
